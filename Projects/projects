@@ -1,1 +1,180 @@
+import sys  
+import os
 
+
+def check_environment():
+    """Check Python environment and dependencies"""
+    print("\nEnvironment Information:")
+    print(f"Python Executable: {sys.executable}")
+    print(f"Python Version: {sys.version}")
+    print(f"Current Working Directory: {os.getcwd()}")
+
+    # Check required libraries
+    try:
+        import numpy as np
+        print(f"NumPy Version: {np.__version__}")
+    except ImportError:
+        print("NumPy not found")
+
+    try:
+        import pandas as pd
+        print(f"Pandas Version: {pd.__version__}")
+    except ImportError:
+        print("Pandas not found")
+
+    try:
+        import sklearn
+        print(f"Scikit-learn Version: {sklearn.__version__}")
+    except ImportError:
+        print("Scikit-learn not found")
+
+    print("\n")
+
+
+# 其余导入
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import classification_report
+from datetime import datetime
+
+# ... (其余代码保持不变)
+
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import classification_report
+from datetime import datetime
+
+
+class SimpleIDS:
+    def __init__(self):
+        self.model = MLPClassifier(
+            hidden_layer_sizes=(64, 32),
+            max_iter=300,
+            random_state=42
+        )
+        self.scaler = StandardScaler()
+
+        # Define attack types
+        self.attack_types = {
+            0: "Normal Traffic",
+            1: "DDoS Attack",
+            2: "Port Scanning",
+            3: "SQL Injection"
+        }
+
+    def preprocess_data(self, X):
+        """Preprocess the input data"""
+        return self.scaler.fit_transform(X)
+
+    def train(self, X, y):
+        """Train the model"""
+        X_processed = self.preprocess_data(X)
+        self.model.fit(X_processed, y)
+        return self.model
+
+    def predict(self, X):
+        """Make predictions"""
+        X_processed = self.preprocess_data(X)
+        return self.model.predict(X_processed)
+
+    def predict_with_confidence(self, X):
+        """Make predictions with confidence scores"""
+        X_processed = self.preprocess_data(X)
+        predictions = self.model.predict(X_processed)
+        probabilities = self.model.predict_proba(X_processed)
+        return predictions, probabilities
+
+
+def setup_environment():
+    """Setup virtual environment if needed"""
+    venv_python = r"F:\CPSC 4270\ids_model\venv\Scripts\python.exe"
+
+    if sys.executable != venv_python:
+        print(f"Restarting with correct Python interpreter: {venv_python}")
+        try:
+            import subprocess
+            subprocess.run([venv_python, __file__])
+            sys.exit()
+        except Exception as e:
+            print(f"Failed to restart with venv: {e}")
+            # Continue with current interpreter
+
+
+def main():
+    # Check environment
+    check_environment()
+
+    # Create sample data
+    print("Generating sample data...")
+    np.random.seed(42)
+    n_samples = 1000
+    n_features = 10
+
+    # Generate normal traffic data
+    normal_traffic = np.random.normal(0, 1, (int(n_samples * 0.7), n_features))
+    normal_labels = np.zeros(int(n_samples * 0.7))
+
+    # Generate attack traffic data with different types
+    attack_traffic = np.random.normal(2, 1, (int(n_samples * 0.3), n_features))
+    attack_labels = np.random.randint(1, 4, int(n_samples * 0.3))  # 3 types of attacks
+
+    # Combine data
+    X = np.vstack([normal_traffic, attack_traffic])
+    y = np.hstack([normal_labels, attack_labels])
+
+    # Split into training and testing sets
+    print("Splitting dataset...")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    # Train the model
+    print("Training intrusion detection model...")
+    ids = SimpleIDS()
+    ids.train(X_train, y_train)
+
+    # Evaluate the model
+    print("\nModel Evaluation Results:")
+    y_pred = ids.predict(X_test)
+    print(classification_report(y_test, y_pred,
+                                target_names=list(ids.attack_types.values())))
+
+    # Test real-time detection with enhanced output
+    print("\nSimulating Real-time Detection:")
+    test_samples = np.random.normal(0, 1, (5, n_features))
+    predictions, probabilities = ids.predict_with_confidence(test_samples)
+
+    # Display results with timestamp and confidence
+    for i, (pred, prob) in enumerate(zip(predictions, probabilities)):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        attack_type = ids.attack_types[pred]
+        confidence = np.max(prob)
+
+        print(f"[{timestamp}] Sample {i + 1}:")
+        print(f"  - Classification: {attack_type}")
+        print(f"  - Confidence: {confidence:.2%}")
+
+        # Show detailed probabilities for each type
+        print("  - Detailed Analysis:")
+        for attack_id, attack_name in ids.attack_types.items():
+            print(f"    {attack_name}: {prob[attack_id]:.2%}")
+        print()
+
+    # Additional Statistics
+    print("\nDetection Summary:")
+    unique, counts = np.unique(predictions, return_counts=True)
+    for u, c in zip(unique, counts):
+        print(f"{ids.attack_types[u]}: {c} instances")
+
+
+if __name__ == "__main__":
+    # Try to use virtual environment
+    setup_environment()
+    # Run main program
+    main()
